@@ -1,2 +1,2 @@
-# NMCG-KNOWLEDGE-ASSISTANT
-An internal chatbot for NMCG, providing faster information than manually scanning documents or the website!
+# Knowledge-Assistant-Platform
+An internal RAG-based chatbot for varied requirements, providing faster information than manually scanning documents or websites!

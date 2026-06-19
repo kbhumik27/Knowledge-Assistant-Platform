@@ -1,186 +1,243 @@
-# Knowledge-Assistant-Platform
-An internal RAG-based chatbot for varied requirements, providing faster information than manually scanning documents or websites!
+#  — Knowledge Assistant Platform
 
-# Development Log
+An AI-powered knowledge assistant that uses Retrieval-Augmented Generation (RAG) to answer questions from an internal knowledge base. Built with a Flask API backend, Ollama LLM inference, and a React (Vite) frontend.
 
-## Day 1 – Project Setup & LLM Integration
+---
 
-### Project Planning
+## Table of Contents
 
-* Finalized project vision from a single NMCG chatbot to a reusable Knowledge Assistant Platform.
-* Defined architecture supporting multiple knowledge bases (NMCG, Tourism, other client domains).
-* Finalized technology stack:
+1. [Architecture Overview](#architecture-overview)
+2. [Prerequisites](#prerequisites)
+3. [Project Structure](#project-structure)
+4. [Setup Guide](#setup-guide)
+5. [Running the Application](#running-the-application)
+6. [API Reference](#api-reference)
+7. [Troubleshooting](#troubleshooting)
 
-  * Llama 3 8B (Ollama)
-  * LangChain
-  * ChromaDB
-  * Sentence Transformers
-  * PyMuPDF
-  * Streamlit (planned)
+---
 
-### Repository & Environment Setup
+## Architecture Overview
 
-* Created GitHub repository.
-* Renamed repository to **Knowledge-Assistant-Platform**.
-* Cloned repository locally and configured Git.
-* Created project folder structure.
-* Configured `.gitignore`.
-* Created initial README and project documentation.
+```
+┌─────────────┐       HTTP        ┌─────────────────┐      Ollama API     ┌──────────────┐
+│   Frontend   │ ◄──────────────► │   Flask Backend  │ ◄─────────────────► │  Ollama LLM  │
+│  (React/Vite)│   localhost:5173  │   (main.py)      │   localhost:11434   │  (llama3:8b)  │
+└─────────────┘                   └────────┬────────┘                     └──────────────┘
+                                           │
+                                           │ Similarity Search
+                                           ▼
+                                  ┌─────────────────┐
+                                  │   ChromaDB       │
+                                  │  (vector_db/)    │
+                                  └─────────────────┘
+```
 
-### Python Environment
+**Flow:**
+1. User submits a question through the React frontend.
+2. Flask backend performs a similarity search against the ChromaDB vector store.
+3. Retrieved context is sent to the Ollama LLM (llama3:8b) with a structured prompt.
+4. The response is streamed back to the frontend in real-time.
 
-* Installed Python.
-* Created and activated virtual environment (`venv`).
-* Verified package installation workflow.
+---
 
-### LLM Setup
+## Prerequisites
 
-* Installed Ollama locally.
-* Downloaded and configured **Llama 3 8B**.
-* Verified Ollama installation and model availability.
+| Tool         | Version  | Download Link                                      |
+|--------------|----------|----------------------------------------------------|
+| Python       | ≥ 3.11   | https://www.python.org/downloads/                  |
+| Node.js      | ≥ 18     | https://nodejs.org/                                |
+| npm          | ≥ 9      | Included with Node.js                              |
+| Ollama       | Latest   | https://ollama.com/download                        |
+| Git          | Latest   | https://git-scm.com/downloads                      |
 
-### LangChain Integration
+---
 
-* Installed `langchain-ollama`.
-* Created first test script (`test_llama.py`).
-* Successfully connected Python → LangChain → Ollama → Llama 3.
-* Generated first local LLM response:
+## Project Structure
 
-  * Prompt: "What is the capital of India?"
-  * Response: "The capital of India is New Delhi."
+```
+Disha/
+├── main.py                  # Flask API server (backend entry point)
+├── requirements.txt         # Python dependencies
+├── README.md                # This file
+│
+├── src/
+│   ├── create_embeddings.py # Script to build the vector database
+│   └── chatbot.py           # Chatbot logic module
+│
+├── docs/
+│   └── sample_docs/         # Knowledge base source documents (.md)
+│
+├── vector_db/               # ChromaDB persistent storage (auto-generated)
+│
+└── frontend/                # React + Vite frontend
+    ├── package.json
+    ├── index.html
+    ├── vite.config.js
+    └── src/
+        ├── main.jsx         # React entry point
+        ├── App.jsx          # Main application component
+        └── index.css        # Global styles (KPMG theme)
+```
 
-### RAG Preparation
+---
 
-* Installed:
+## Setup Guide
 
-  * ChromaDB
-  * Sentence Transformers
-  * PyMuPDF
-  * LangChain Community
-* Created initial RAG module structure:
+### Step 1 — Clone the Repository
 
-  * `load_docs.py`
-  * `create_embeddings.py`
-  * `query_docs.py`
+```bash
+git clone <repository-url>
+```
 
-### Knowledge Base Preparation
+### Step 2 — Install & Start Ollama
 
-* Created first sample knowledge document:
+1. Download and install Ollama from [ollama.com/download](https://ollama.com/download).
+2. Pull the required model:
 
-  * `NMCG_Knowledge_Base_v1.md`
-* Prepared document structure for future RAG ingestion.
+```bash
+ollama pull llama3:8b
+```
 
-### Version Control
+3. Verify Ollama is running:
 
-* Resolved Git merge and remote repository issues.
-* Successfully synchronized local and remote repositories.
-* Pushed initial project setup to GitHub.
+```bash
+curl http://localhost:11434
+```
 
-### Day 1 Outcome
+You should see `Ollama is running`.
 
-* Fully functional local LLM environment established.
-* Project architecture finalized.
-* Ready to begin RAG pipeline development.
+### Step 3 — Set Up the Python Backend
 
-## Day 2 – RAG Pipeline Development & Chatbot Implementation
+```bash
+# Create a virtual environment
+python -m venv .venv
 
-### Document Processing
+# Activate it
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# macOS / Linux:
+source .venv/bin/activate
 
-* Implemented document loading using LangChain document loaders.
-* Successfully loaded the first knowledge source into the application.
-* Configured document preprocessing workflow.
-* Implemented text chunking using `RecursiveCharacterTextSplitter`.
-* Generated optimized document chunks for retrieval.
+# Install dependencies
+pip install -r requirements.txt
+```
 
-### Embedding Generation
+### Step 4 — Build the Vector Database
 
-* Integrated Hugging Face embedding models.
-* Selected and configured `BAAI/bge-small-en-v1.5` for semantic search.
-* Generated vector embeddings for all document chunks.
-* Verified embedding creation and storage process.
+This step processes the knowledge base documents and creates embeddings stored in `vector_db/`.
 
-### Vector Database Integration
+```bash
+python src/create_embeddings.py
+```
 
-* Integrated ChromaDB as the vector database.
-* Created persistent vector storage.
-* Stored document embeddings successfully.
-* Verified vector database creation and retrieval capabilities.
+**Expected output:**
+```
+Chunks Created: <N>
+Creating vector database...
+Vector DB created successfully!
+```
 
-### Retrieval-Augmented Generation (RAG)
+> **Note:** This only needs to be run once, or whenever the source documents in `docs/sample_docs/` are updated.
 
-* Implemented semantic similarity search.
-* Configured document retrieval workflow.
-* Retrieved relevant document chunks based on user queries.
-* Connected retrieval pipeline with Llama 3 8B.
-* Successfully generated answers grounded in retrieved information.
+### Step 5 — Set Up the Frontend
 
-### Query Engine Development
+```bash
+cd frontend
+npm install
+cd ..
+```
 
-* Developed query processing workflow.
-* Implemented context construction from retrieved chunks.
-* Created prompt engineering framework for controlled responses.
-* Configured answer generation using locally hosted Llama 3 8B.
+---
 
-### Chatbot Development
+## Running the Application
 
-* Developed an interactive terminal-based chatbot.
-* Enabled continuous user interaction through a conversational loop.
-* Added chatbot startup and exit functionality.
-* Implemented professional response formatting.
+You need **three services** running simultaneously:
 
-### User Experience Improvements
+### Terminal 1 — Ollama (if not already running as a service)
 
-* Added greeting handling:
+```bash
+ollama serve
+```
 
-  * Hi
-  * Hello
-  * Hey
-  * Good Morning
-  * Good Afternoon
-  * Good Evening
+### Terminal 2 — Backend API
 
-* Added courtesy response handling:
+```bash
+# Activate virtual environment first
+.venv\Scripts\Activate.ps1     # Windows
+# source .venv/bin/activate    # macOS / Linux
 
-  * Thanks
-  * Thank You
-  * Thx
+python main.py
+```
 
-* Added empty-input validation.
+The Flask server starts at **http://127.0.0.1:5000**.
 
-* Improved answer readability using structured formatting.
+### Terminal 3 — Frontend Dev Server
 
-* Reduced unnecessary verbosity in generated responses.
+```bash
+cd frontend
+npm run dev
+```
 
-* Refined chatbot personality for professional interactions.
+The frontend starts at **http://localhost:5173**.
 
-### Response Quality Improvements
+Open your browser and navigate to **http://localhost:5173** to use the application.
 
-* Enhanced prompt engineering to improve answer quality.
-* Configured concise and professional response generation.
-* Implemented bullet-point formatting for multi-item answers.
-* Implemented numbered formatting for process-oriented responses.
-* Reduced hallucination risk through retrieval grounding.
-* Added relevance-based response filtering for unsupported queries.
+---
 
-### Testing & Validation
+## API Reference
 
-* Tested document retrieval functionality.
-* Tested semantic search performance.
-* Tested chatbot interaction flow.
-* Validated response generation against NMCG sample knowledge base.
-* Verified end-to-end RAG pipeline functionality.
+### `GET /api/health`
 
-### Day 2 Outcome
+Returns the health status of backend services.
 
-* Successfully built a fully functional Retrieval-Augmented Generation (RAG) chatbot.
+**Response:**
+```json
+{
+  "status": "healthy",
+  "database_loaded": true,
+  "ollama_connected": true,
+  "details": {
+    "db_path": "/path/to/vector_db",
+    "db_exists": true
+  }
+}
+```
 
-* Established complete workflow:
+### `POST /api/chat`
 
-  * Document Loading
-  * Text Chunking
-  * Embedding Generation
-  * Vector Database Storage
-  * Semantic Retrieval
-  * LLM Response Generation
+Send a question and receive a streamed response.
 
-* Delivered the first working version of the Knowledge Assistant Platform capable of answering questions using uploaded knowledge sources.
+**Request:**
+```json
+{
+  "message": "What are the objectives of NMCG?"
+}
+```
+
+**Response:** Plain text stream (chunked transfer encoding).
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| `ModuleNotFoundError` | Ensure the virtual environment is activated: `.venv\Scripts\Activate.ps1` |
+| `vector_db` not found | Run `python src/create_embeddings.py` to generate it |
+| Ollama connection refused | Ensure Ollama is installed and running: `ollama serve` |
+| Model not found | Pull the model: `ollama pull llama3:8b` |
+| Frontend won't start | Run `npm install` inside the `frontend/` directory |
+| CORS errors in browser | The Flask backend includes CORS support. Ensure `main.py` is running |
+
+---
+
+## Tech Stack
+
+| Layer     | Technology                              |
+|-----------|-----------------------------------------|
+| Frontend  | React 19 · Vite · Inter + Outfit fonts  |
+| Backend   | Flask · Flask-CORS                      |
+| LLM       | Ollama · Llama 3 8B                     |
+| Embeddings| HuggingFace `bge-small-en-v1.5`         |
+| Vector DB | ChromaDB                                |
+| Framework | LangChain                               |

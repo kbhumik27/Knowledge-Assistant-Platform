@@ -175,8 +175,11 @@ Answer:
             "response": f"An error occurred while processing your request: {str(e)}"
         }), 500
 
+# Initialize models at module level so Gunicorn loads them on startup
+# (if __name__ == "__main__" is never reached when using Gunicorn)
+init_models()
+
 if __name__ == "__main__":
-    init_models()
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() == "true"
     app.run(host="0.0.0.0", port=port, debug=debug)
